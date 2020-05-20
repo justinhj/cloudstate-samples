@@ -1,3 +1,4 @@
 user-function.desc
+build/
 node_modules/
 **/src/_proto/

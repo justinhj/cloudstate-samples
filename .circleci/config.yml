@@ -4,7 +4,7 @@ version: 2.1
 # LB_BT_USERNAME typesafe-tools
 # LB_BT_PASSCODE    xxxxxa5c
 # LB_BT_REGISTRY lightbend-docker-registry.bintray.io
-# LB_BT_CS_SAMPLES_REGISTRY cloudstate_samples
+# LB_BT_CS_SAMPLES_REGISTRY cloudstate-samples
 
 orbs:
   node: circleci/node@1.1.6
@@ -89,7 +89,7 @@ jobs:
             - run:
                 name: build shopping cart docker image
                 command: |
-                  cd  shopping-cart/frontend/
+                  cd  shopping-cart/js-shopping-cart/
                   npm install
                   npm run prestart
                   docker build -t "$LB_BT_CS_SAMPLES_REGISTRY"/shopping-cart .
@@ -136,7 +136,7 @@ jobs:
             docker push "$LB_BT_REGISTRY/$LB_BT_CS_SAMPLES_REGISTRY"/shopping-cart:"$DOCKER_IMAGE_TAG"
 
 workflows:
-  test:
+  build_and_push:
     jobs:
       - docker-build
       - publish-to-registry:

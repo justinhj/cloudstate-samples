@@ -18,32 +18,28 @@ const path = require("path");
 const should = require('chai').should();
 const grpc = require("grpc");
 const protoLoader = require("@grpc/proto-loader");
-const fs = require("fs");
 const protobuf = require("protobufjs");
 const protobufHelper = require("cloudstate/src/protobuf-helper");
+const AnySupport = require("cloudstate/src/protobuf-any");
 
 const allIncludeDirs = protobufHelper.moduleIncludeDirs.concat([
-  path.join("..", "..", "protocols", "example")
+  path.join(__dirname, "..", "node_modules", "cloudstate", "proto")
 ]);
 
 const packageDefinition = protoLoader.loadSync(
   [
-    path.join("cloudstate", "entity.proto"),
-    path.join("cloudstate", "event_sourced.proto")
+    path.join( __dirname, "..", "node_modules", "cloudstate" ,"proto", "cloudstate", "entity.proto"),
+    path.join( __dirname, "..", "node_modules", "cloudstate" ,"proto", "cloudstate", "event_sourced.proto")
   ],
   {
-    includeDirs: allIncludeDirs
+    //includeDirs: allIncludeDirs
   });
 const descriptor = grpc.loadPackageDefinition(packageDefinition);
 
 const root = protobufHelper.loadSync([
-  path.join("shoppingcart","shoppingcart.proto"),
-  path.join("shoppingcart","persistence","domain.proto")
+  path.join( __dirname, "..", "shoppingcart.proto")
 ], allIncludeDirs);
-
-const ItemAdded = root.lookupType("com.example.shoppingcart.persistence.ItemAdded");
-const ItemRemoved = root.lookupType("com.example.shoppingcart.persistence.ItemRemoved");
-const Cart = root.lookupType("com.example.shoppingcart.persistence.Cart");
+const anySupport = new AnySupport(root)
 
 // Start server
 const shoppingCartEntity = require("../shoppingcart.js");
@@ -123,15 +119,6 @@ function stripHostName(url) {
   }
 }
 
-function decodeAny(root, any) {
-  let bytes = any.value;
-  if (bytes === undefined) {
-    // An empty buffer is falsey and so disappears, we need to make it reappear.
-    bytes = new Buffer(0);
-  }
-  return root.lookupType(stripHostName(any.type_url)).decode(bytes);
-}
-
 function sendCommand(call, name, payload) {
   const cid = ++commandId;
   call.write({
@@ -148,10 +135,10 @@ function sendCommand(call, name, payload) {
     should.exist(msg.reply);
     msg.reply.commandId.toNumber().should.equal(cid);
     should.exist(msg.reply.clientAction.reply);
-    msg.reply.decodedPayload = decodeAny(root, msg.reply.clientAction.reply.payload);
+    msg.reply.decodedPayload = anySupport.deserialize(msg.reply.clientAction.reply.payload);
     if (msg.reply.events) {
       msg.reply.decodedEvents = msg.reply.events.map(event => {
-        return decodeAny(root, event);
+        return anySupport.deserialize(event);
       });
     }
     return msg.reply;
@@ -162,10 +149,7 @@ function sendEvent(call, sequence, event) {
   call.write({
     "event": {
       sequence: sequence,
-      payload: {
-        type_url: "type.googleapis.com/" + fullNameOf(event.constructor.$type),
-        value: event.constructor.encode(event).finish()
-      }
+      payload: AnySupport.serialize(event, false, true, true)
     }
   })
 }
@@ -186,6 +170,7 @@ describe("shopping cart", () => {
     const port = server.start({
       bindPort: 0
     });
+    console.log("descriptor", descriptor);
     discoveryClient = new descriptor.cloudstate.EntityDiscovery("127.0.0.1:" + port, grpc.credentials.createInsecure());
     eventSourcedClient = new descriptor.cloudstate.eventsourced.EventSourced("127.0.0.1:" + port, grpc.credentials.createInsecure());
   });
@@ -207,13 +192,14 @@ describe("shopping cart", () => {
 
   it("should accept events", () => {
     const call = callAndInit();
-    sendEvent(call, 1, ItemAdded.create({
+    sendEvent(call, 1, {
+      type: "ItemAdded",
       item: {
         productId: "abc",
         name: "Some product",
         quantity: 10
       }
-    }));
+    });
     return getCart(call)
       .then(reply => {
         reply.decodedPayload.items[0].should.include({productId: "abc", name: "Some product", quantity: 10});
@@ -230,7 +216,7 @@ describe("shopping cart", () => {
       quantity: 10
     }).then(reply => {
       reply.events.should.have.lengthOf(1);
-      reply.events[0].type_url.should.equal("type.googleapis.com/com.example.shoppingcart.persistence.ItemAdded");
+      reply.events[0].type_url.should.equal("json.cloudstate.io/ItemAdded");
       reply.decodedEvents[0].item.should.include({productId: "abc", name: "Some product", quantity: 10});
       return getCart(call);
     }).then(reply => {

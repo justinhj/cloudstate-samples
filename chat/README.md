@@ -1,26 +1,22 @@
 
 # Cloudstate Sample Chat Application
 
-The following assumes that you have completed the steps for setting up your local environment as well as creating an account and project.  If you have not done this you must follow the instructions here:
+## Prerequisites
 
-* [Setting Up your Machine](https://docs.lbcs.dev/gettingstarted/setup.html)
-   * as well as the [Developer prerequisites](https://docs.lbcs.dev/developing/developing.html#prerequisites)
-   * You also need to install the protobuf compiler.
-* [Your Lightbend Cloudstate Account](https://docs.lbcs.dev/gettingstarted/account.html)
-* [Creating a Project](https://docs.lbcs.dev/gettingstarted/project.html)
+First make sure [your local environment is setup appropriately](cloudstate-samples#prerequisites).
 
 ## Sample application layout
 Grab the sample application from github:
  
 [https://github.com/lightbend/cloudstate-chat-sample](https://github.com/lightbend/cloudstate-chat-sample)
 
-The sample application consists of 3 services:
+The sample application consists of three services:
 * A stateless service `chat`
 * A stateful Entity based service `friends`
 * A stateful CRDT based service `presence`
 
 Additionally:
-* A `cloudstate` directory that contains proto definitions needed.
+* A `cloudstate` directory that contains the needed protobuf definitions.
 * A `deploy` directory that contains the deployment yaml files.
 * An `envoy` directory for running a local envoy proxy instance (local testing only).
 
@@ -54,10 +50,9 @@ instructions in the section below.
 cd friends
 npm install
 npm run prestart
-
 ```
 
-This will compile the protobuf and `user-function.desc`.
+This will compile the protobuf and `user-function.desc` files.
 
 Build a docker image with the right registry and tag
 ```
@@ -71,21 +66,21 @@ docker push <my-registry>/friends:latest
 
 Deploy the image by changing into the deploy folder and editing the `friends.yaml` to point to your docker image that you just pushed.
 ```
-cd ../deploy
-cat friends.yaml
+$ cd ../deploy
+$ cat friends.yaml
 apiVersion: cloudstate.io/v1alpha1
 kind: StatefulService
 metadata:
   name: friends
 spec:
   containers:
-  - image: coreyauger/friends:latest    # <-- Change this to your image
+  - image: lightbend-docker-registry.bintray.io/cloudstate-samples/friends:latest    # <-- Change this to your image
     name: friends
 ```
 
 Deploy the service to your project namespace
 ```
-kubectl apply -f friends.yaml -n <project_name>
+$ kubectl apply -f friends.yaml -n <project_name>
 statefulservice.cloudstate.io/friends created
 ````
 
@@ -94,11 +89,10 @@ statefulservice.cloudstate.io/friends created
 cd ../presence
 npm install
 npm run prestart
-
 ```
 
-This will compile the protobuf and `user-function.desc`
-Build a docker image with the right registry and tag
+This will compile the protobuf and `user-function.desc` files.
+Build a docker image with the correct registry and tag
 ```
 docker build . -t <my-registry>/presence:latest
 ```
@@ -110,28 +104,28 @@ docker push <my-registry>/presence:latest
 
 Deploy the image by changing into the deploy folder and editing the `presence.yaml` to point to your docker image that you just pushed.
 ```
-cd ../deploy
-cat presence.yaml
+$ cd ../deploy
+$ cat presence.yaml
 apiVersion: cloudstate.io/v1alpha1
 kind: StatefulService
 metadata:
   name: presence
 spec:
   containers:
-  - image: coreyauger/presence:latest    # <-- Change this to your image
+  - image: lightbend-docker-registry.bintray.io/cloudstate-samples/presence:latest    # <-- Change this to your image
     name: presence
 ```
 
 Deploy the service to your project namespace
 ```
-kubectl apply -f presence.yaml -n <project-name>
+$ kubectl apply -f presence.yaml -n <project-name>
 statefulservice.cloudstate.io/presence created
 ````
 
 ### Verify they are running
 Check that the services are running
 ```
-kubectl get statefulservices -n <project-name>
+$ kubectl get statefulservices -n <project-name>
 NAME       REPLICAS   STATUS
 friends    1          Ready
 presence   1          Ready
@@ -140,9 +134,9 @@ presence   1          Ready
 To redeploy a new image to the cluster you must delete and then redeploy using the yaml file.  
 For example if we updated the friends docker image we would do the following.
 ````
-kubectl delete statefulservice friends -n <project-name>
+$ kubectl delete statefulservice friends -n <project-name>
 statefulservice.cloudstate.io "friends" deleted
-kubectl apply -f friends.yaml -n <project-name>    
+$ kubectl apply -f friends.yaml -n <project-name>    
 statefulservice.cloudstate.io/friends created
 ````
 
@@ -150,12 +144,12 @@ statefulservice.cloudstate.io/friends created
 ### Chat
 The chat service is a front end web application written in typescript.  It is backed by a `stateless` service that will serve the compiled javacript, html and images.
 
-This service makes `grpc-web` calls directly to the other services to get the data that it needs.  In order to do this we need to compile the proto definitions from the other two services as well as generate the grpc-web clients.  This is all done with a shell script `protogen.sh`.  Let's first run the protogen script, then compile the service definition and finally compile our typescript.
+This service makes `grpc-web` calls directly to the other services to get the data that it needs.  In order to do this we need to compile the proto definitions from the other two services as well as generate the grpc-web clients.  This is all done with a shell script `protogen.sh`.  Let's first install dependencies, including the cloudstate javascript client library, and then run the protogen script. Next compile the service definition and finally compile our typescript.
 
 ```
 cd ../chat
-./protogen.sh
 npm install
+./protogen.sh
 npm run prestart
 npm run-script build
 ```
@@ -170,23 +164,23 @@ Push the docker image to the registry
 docker push <my-registry>/chat:latest
 ```
 
-Deploy the image by changing into the deploy folder and editing the `chat.yaml` to point to your docker image that you just pushed.
+Deploy the image by changing into the deploy folder and editing `chat.yaml` to point to your docker image that you just pushed.
 ```
-cd ../deploy
-cat chat.yaml
+$ cd ../deploy
+$ cat chat.yaml
 apiVersion: cloudstate.io/v1alpha1
 kind: StatefulService
 metadata:
   name: chat
 spec:
   containers:
-  - image: coreyauger/chat:latest    # <-- Change this to your image
+  - image: ightbend-docker-registry.bintray.io/cloudstate-samples/chat:latest    # <-- Change this to your image
     name: chat
 ```
 
 Deploy the service to your project namespace
 ```
-kubectl apply -f chat.yaml -n <project-name>
+$ kubectl apply -f chat.yaml -n <project-name>
 statefulservice.cloudstate.io/chat created
 ```
 
@@ -228,7 +222,7 @@ kubectl apply -f routes.yaml -n <project-name>
 
 Open a web browser and navigate to:
 
-`https://<project-name>.us-east1.apps.lbcs.dev/pages/chat.html`
+`https://<project-name>.us-east1.apps.lbcs.io/pages/chat.html`
 
 You should now see the front end chat interface.
 
