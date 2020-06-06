@@ -1,19 +1,9 @@
 
 # Cloudstate Sample Shopping Cart Application
 
-The following assumes that you have completed the steps for setting up your local environment as well as creating an account and project.  If you have not done this you must follow the instructions here:
+# Prerequisites
 
-* [Setting Up your Machine](https://docs.lbcs.dev/gettingstarted/setup.html)
-   * as well as the [Developer prerequisites](https://docs.lbcs.dev/developing/developing.html#prerequisites)
-   * Install [npm](https://www.npmjs.com/get-npm) (node package manager)
-      * We recommend v6.14.3 or later.  (Check with `npm -v`)
-   * You also need to install the protobuf compiler.
-      * We recommend using v3.0.0 or later.  (Check with `protoc --version`)
-      * Mac OS X `brew install protobuf`
-      * linux `sudo apt install protobuf-compiler`
-      * Or [alternatively](https://developers.google.com/protocol-buffers/docs/downloads) (src and bins)
-* [Your Lightbend Cloudstate Account](https://docs.lbcs.dev/gettingstarted/account.html)
-* [Creating a Project](https://docs.lbcs.dev/gettingstarted/project.html)
+First make sure [your local environment is setup appropriately](../README.md#prerequisites).
 
 ## Sample application layout
 
@@ -32,15 +22,20 @@ All the latest docker images are available publicly at `lightbend-docker-registr
 To deploy the shopping-cart application as is, connect to your kubernetes environment and do the following.
 
 ```bash
-cd deploy
-kubectl apply -f . -n <project-name>
-
-# To Verify
-kubectl -n <project-name>  get statefulservices
+$ cd deploy
+$ kubectl apply -f . -n <project-name>
+# verify stateful store
+$ kubectl get -n <project-name> statefulstore
+NAME                  AGE
+shopping-store   21m
+# verify stateful services
+$ kubectl -n <project-name>  get statefulservices
 NAME            AGE    REPLICAS   STATUS
-shopping-cart   5m     1          Running
+shopping-cart   7m     1          Running
+frontend        4m     1          Running
 ```
 
+`https://<project-name>.us-east1.apps.lbcs.dev/pages/index.html`
 
 ## Building and deploying the Sample application
 
@@ -51,6 +46,8 @@ This service makes `grpc-web` calls directly to the other services to get the da
 
 ```
 cd frontend
+nvm install
+nvm use
 npm install
 ```
 This will install your dependencies, including cloudstate javascript client library.
@@ -117,6 +114,8 @@ statefulstore.cloudstate.io/shopping-store created
 ### Shopping Cart Service
 ```
 cd ../js-shopping-cart
+nvm install
+nvm use
 npm install
 npm run prestart
 ```
@@ -210,34 +209,9 @@ kubectl apply -f routes.yaml -n <project-name>
 
 Open a web browser and navigate to:
 
-`https://<project-name>.us-east1.apps.lbcs.dev/pages/index.html`
+`https://<project-name>.us-east1.apps.lbcs.io/pages/index.html`
 
 You should now see the shopping cart interface.
-
-## Quick Install
-
-All the latest docker images are available publicly at `lightbend-docker-registry.bintray.io/`.
-
-To deploy the shopping cart application as is, connect to your kubernetes environment and do the following.
-
-### Deployment
-```bash
-$ cd deploy
-$ kubectl apply -f . -n <project-name>
-# verify stateful store
-$ kubectl get -n <project-name> statefulstore
-NAME                  AGE
-shopping-store   21m
-# verify stateful services
-$ kubectl -n <project-name>  get statefulservices
-NAME            AGE    REPLICAS   STATUS
-shopping-cart   7m     1          Running
-frontend        4m     1          Running
-```
-
-To access the front end chat interface open a web browser and navigate to:
-
-`https://<project-name>.us-east1.apps.lbcs.dev/pages/index.html`
 
 ## Maintenance notes
 

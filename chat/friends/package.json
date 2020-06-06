@@ -22,6 +22,10 @@
     "url": "https://github.com/cloudstateio/samples-js-chat",
     "directory": "friends"
   },
+  "engineStrict": true,
+  "engines": {
+    "node": "~12"
+  },
   "dependencies": {
     "cloudstate": "0.0.3"
   },
