@@ -154,8 +154,8 @@ This service makes `grpc-web` calls directly to the other services to get the da
 
 ```
 cd ../chat
-./protogen.sh
 npm install
+./protogen.sh
 npm run prestart
 npm run-script build
 ```
